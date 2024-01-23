@@ -7,7 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from sjaorApp import views
-from sjaorApp.views import SuperUserRegistrationView, DocumentOnlyViewSet
+from sjaorApp.views import SuperUserRegistrationView, DocumentOnlyViewSet, EventOnlyViewSet
 
 router = routers.DefaultRouter()
 router.register("news", views.NewsViewSet, basename="news")
@@ -17,6 +17,7 @@ router.register("ignatian-thoughts", views.IgnatianThoughtsViewSet, basename="ig
 router.register("documents", views.DocumentViewSet, basename="documents")
 router.register("shukran", views.ShukranViewSet, basename="shukran")
 router.register("documents-category", views.DocumentCategoryViewSet, basename="documents-category")
+router.register("event-category", views.EventCategoryViewSet, basename="event-category")
 router.register("dashboard", views.DashboardApi, basename="dashboard")
 
 urlpatterns = [
@@ -29,6 +30,7 @@ urlpatterns = [
     path('auth/superuser/', SuperUserRegistrationView.as_view({'post': 'create_superuser'}),\
          name='superuser-registration'),
     path('api/documentonly/', DocumentOnlyViewSet.as_view(), name="documentonly"),
+    path('api/eventonly/', EventOnlyViewSet.as_view(), name="eventonly"),
 ]
 
 # Serve media files during development

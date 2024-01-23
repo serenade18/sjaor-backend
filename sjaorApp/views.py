@@ -9,10 +9,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory, Shukran, IgnatianThoughts
+    DocumentCategory, Shukran, IgnatianThoughts, EventCategory
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
     AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
-    ShukranSerializer, IgnatianThoughtsSerializer
+    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer
 
 from django.contrib.auth import get_user_model
 
@@ -211,9 +211,9 @@ class PopesPrayerIntentionsViewSet(viewsets.ViewSet):
                             status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):
-        if not request.user.is_staff:
-            return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
-                            status=status.HTTP_401_UNAUTHORIZED)
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
 
         queryset = PopesPrayerIntentions.objects.all()
         news = get_object_or_404(queryset, pk=pk)
@@ -527,6 +527,75 @@ class IgnatianThoughtsViewSet(viewsets.ViewSet):
         news = get_object_or_404(queryset, pk=pk)
         news.delete()
         return Response({"error": False, "message": "News Deleted"})
+
+
+class EventCategoryViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        doc_categories = EventCategory.objects.all().order_by('-id')
+        serializer = EventCategorySerializer(doc_categories, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Categories", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            serializer = EventCategorySerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Category Added Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during video creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Video"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = EventCategory.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        serializer = EventCategorySerializer(news, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        try:
+            queryset = EventCategory.objects.all()
+            news = get_object_or_404(queryset, pk=pk)
+            serializer = EventCategorySerializer(news, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Category updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = EventCategory.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        news.delete()
+        return Response({"error": False, "message": "Category Deleted"})
+
+
+class EventOnlyViewSet(generics.ListAPIView):
+    serializer_class = EventCategorySerializer
+
+    def get_queryset(self):
+        return EventCategory.objects.all()
 
 
 class DashboardApi(viewsets.ViewSet):
