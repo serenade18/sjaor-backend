@@ -7,11 +7,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from sjaorApp import views
-from sjaorApp.views import SuperUserRegistrationView
+from sjaorApp.views import SuperUserRegistrationView, DocumentOnlyViewSet
 
 router = routers.DefaultRouter()
 router.register("news", views.NewsViewSet, basename="news")
+router.register("catalogues", views.CataloguesViewSet, basename="catalogues")
 router.register("popes-prayers", views.PopesPrayerIntentionsViewSet, basename="popes-prayers")
+router.register("documents", views.DocumentViewSet, basename="documents")
+router.register("documents-category", views.DocumentCategoryViewSet, basename="documents-category")
+router.register("dashboard", views.DashboardApi, basename="dashboard")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -22,6 +26,7 @@ urlpatterns = [
     path('auth/', include('djoser.social.urls')),
     path('auth/superuser/', SuperUserRegistrationView.as_view({'post': 'create_superuser'}),\
          name='superuser-registration'),
+    path('api/documentonly/', DocumentOnlyViewSet.as_view(), name="documentonly"),
 ]
 
 # Serve media files during development

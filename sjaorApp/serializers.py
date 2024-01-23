@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 
 from sjaorApp.models import News, PopesPrayerIntentions, Catalogues, IgnatianThoughts, Documents, EventCategory, Events, \
-    Shukran
+    Shukran, Adusums, Products, DocumentCategory
 
 User = get_user_model()
 
@@ -141,3 +141,34 @@ class ShukranSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shukran
         fields = '__all__'
+
+
+class AdusumsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Adusums
+        fields = '__all__'
+
+
+class ProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Products
+        fields = '__all__'
+
+
+class DocumentCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentCategory
+        fields = '__all__'
+
+
+class DocumentSerializer(serializers.ModelSerializer): # Use the serializer here
+
+    class Meta:
+        model = Documents
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response["documentcategory"] = DocumentCategorySerializer(instance.document_category).data
+        return response
+

@@ -57,6 +57,7 @@ class News(models.Model):
     image = models.ImageField(upload_to='news/', null=True, blank=True)
     title = models.CharField(max_length=100)
     body = models.TextField()
+    author = models.TextField(max_length=255, null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
 
@@ -89,10 +90,18 @@ class IgnatianThoughts(models.Model):
     objects = models.Manager()
 
 
+class DocumentCategory(models.Model):
+    id = models.AutoField(primary_key=True)
+    category = models.CharField(max_length=255)
+    added_on = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
+
+
 class Documents(models.Model):
     id = models.AutoField(primary_key=True)
     document_name = models.CharField(max_length=255)
     document_file = models.FileField(upload_to='documents/', null=True, blank=True)
+    document_category = models.ForeignKey(DocumentCategory, on_delete=models.CASCADE, default=None)
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
 
@@ -141,3 +150,10 @@ class Adusums(models.Model):
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
 
+
+class Products(models.Model):
+    id = models.AutoField(primary_key=True)
+    product_image = models.ImageField(upload_to='products/', null=True, blank=True)
+    product_description = models.CharField(max_length=255)
+    added_on = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
