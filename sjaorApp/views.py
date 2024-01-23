@@ -9,10 +9,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory, Shukran
+    DocumentCategory, Shukran, IgnatianThoughts
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
     AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
-    ShukranSerializer
+    ShukranSerializer, IgnatianThoughtsSerializer
 
 from django.contrib.auth import get_user_model
 
@@ -455,6 +455,78 @@ class ShukranViewSet(viewsets.ViewSet):
 
         return Response(dict_response,
                             status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Shukran.objects.all()
+        shukran = get_object_or_404(queryset, pk=pk)
+        shukran.delete()
+        return Response({"error": False, "message": "Category Deleted"})
+
+
+class IgnatianThoughtsViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        news = IgnatianThoughts.objects.all().order_by('-id')
+        serializer = IgnatianThoughtsSerializer(news, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Thoughts", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            serializer = IgnatianThoughtsSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Thought Posted Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during video creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Video"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = IgnatianThoughts.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        serializer = IgnatianThoughtsSerializer(news, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        try:
+            queryset = IgnatianThoughts.objects.all()
+            news = get_object_or_404(queryset, pk=pk)
+            serializer = IgnatianThoughtsSerializer(news, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Thought updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = IgnatianThoughts.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        news.delete()
+        return Response({"error": False, "message": "News Deleted"})
 
 
 class DashboardApi(viewsets.ViewSet):

@@ -86,7 +86,6 @@ class IgnatianThoughts(models.Model):
     thought_month = models.CharField(max_length=255)
     thought_day = models.CharField(max_length=255)
     thought_item = models.CharField(max_length=255)
-    added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
 
 
