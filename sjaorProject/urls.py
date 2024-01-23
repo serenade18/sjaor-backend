@@ -14,6 +14,7 @@ router.register("news", views.NewsViewSet, basename="news")
 router.register("catalogues", views.CataloguesViewSet, basename="catalogues")
 router.register("popes-prayers", views.PopesPrayerIntentionsViewSet, basename="popes-prayers")
 router.register("documents", views.DocumentViewSet, basename="documents")
+router.register("shukran", views.ShukranViewSet, basename="shukran")
 router.register("documents-category", views.DocumentCategoryViewSet, basename="documents-category")
 router.register("dashboard", views.DashboardApi, basename="dashboard")
 

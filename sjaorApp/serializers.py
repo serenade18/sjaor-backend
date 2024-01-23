@@ -133,7 +133,7 @@ class EventsSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response["eventcategory"] = EventCategorySerializer(instance.eventcategory_id).data
+        response["eventcategory"] = EventCategorySerializer(instance.event_category).data
         return response
 
 

@@ -9,9 +9,10 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory
+    DocumentCategory, Shukran
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
-    AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer
+    AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
+    ShukranSerializer
 
 from django.contrib.auth import get_user_model
 
@@ -398,6 +399,62 @@ class DocumentOnlyViewSet(generics.ListAPIView):
 
     def get_queryset(self):
         return DocumentCategory.objects.all()
+
+
+class ShukranViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        shukran = Shukran.objects.all().order_by('-id')
+        serializer = ShukranSerializer(shukran, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All shukran", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            # Get the total number of shukran
+            total_shukran = Shukran.objects.count()
+
+            # Check if the limit is reached (e.g., 5)
+            if total_shukran >= 4:
+                # Retrieve the oldest catalogue
+                oldest_shukran = Shukran.objects.order_by('added_on').first()
+
+                # Delete the oldest catalogue
+                oldest_shukran.delete()
+
+            serializer = ShukranSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Catalogue Added Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during catalogue creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Catalogue"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        try:
+            queryset = Shukran.objects.all()
+            shukran = get_object_or_404(queryset, pk=pk)
+            serializer = ShukranSerializer(shukran, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Catalogue Updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
 
 
 class DashboardApi(viewsets.ViewSet):
