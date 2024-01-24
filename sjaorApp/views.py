@@ -655,6 +655,21 @@ class EventViewSet(viewsets.ViewSet):
         try:
             queryset = Events.objects.all()
             news = get_object_or_404(queryset, pk=pk)
+
+            # Extract event_month from the payload
+            event_month = request.data.get('event_month')
+
+            # Validate event_month
+            if event_month:
+                # Convert month name to number
+                try:
+                    event_month_number = datetime.strptime(event_month, "%B").month
+                    # Update the event_month_number in the data
+                    request.data['event_month_number'] = event_month_number
+                except ValueError:
+                    dict_response = {"error": True, "message": "Invalid month name in the payload"}
+                    return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
+
             serializer = EventsSerializer(news, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -666,16 +681,24 @@ class EventViewSet(viewsets.ViewSet):
             dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
 
         return Response(dict_response,
-                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+                        status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
 
     def destroy(self, request, pk=None):
-        # if not request.user.is_staff:
-        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
-        #                     status=status.HTTP_401_UNAUTHORIZED)
-
         queryset = Events.objects.all()
-        news = get_object_or_404(queryset, pk=pk)
-        news.delete()
+        event = get_object_or_404(queryset, pk=pk)
+
+        # Check if the event belongs to the "General Events" category
+        if event.event_category and event.event_category.category.lower() == "general events":
+            # Check if the event is over (you need to replace the condition with your own logic)
+            if event.added_on < datetime.now():
+                event.delete()
+                return Response({"error": False, "message": "Event Deleted"})
+            else:
+                return Response({"error": True, "message": "Event is not over yet, cannot be deleted"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        # For events not belonging to the "General Events" category, proceed with normal deletion
+        event.delete()
         return Response({"error": False, "message": "Event Deleted"})
 
 
