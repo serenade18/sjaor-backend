@@ -138,14 +138,15 @@ class Shukran(models.Model):
 
 class Adusums(models.Model):
     id = models.AutoField(primary_key=True)
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField(max_length=255, unique=True)
+    fullname = models.CharField(max_length=255, default=None)
+    username = models.CharField(max_length=255)
+    email_address = models.EmailField(max_length=255, unique=True)
     date_of_birth = models.DateField()
     date_of_entry = models.DateField()
     name_of_provincials = models.CharField(max_length=255)
     current_community = models.CharField(max_length=255)
     profile_picture = models.FileField(upload_to='adusums/', null=True, blank=True)
-    status = models.BooleanField(default=False)
+    status = models.BooleanField(default=0)
     password = models.CharField(max_length=255)
     remember_token = models.CharField(max_length=255, null=True, blank=True)
     reset_code = models.CharField(max_length=255, null=True, blank=True)

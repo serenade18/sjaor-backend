@@ -98,6 +98,90 @@ class UserAccountDeleteView(generics.DestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class AdusumViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        adusums = Adusums.objects.all().order_by('-id')
+        serializer = AdusumsSerializer(adusums, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Adusum", "data": serializer.data}
+
+        return Response(response_dict)
+
+    # def create(self, request):
+    #     try:
+    #         serializer = AdusumsSerializer(data=request.data, context={"request": request})
+    #         if serializer.is_valid():
+    #             serializer.save()
+    #             dict_response = {"error": False, "message": "Adusum Registered Successfully"}
+    #         else:
+    #             dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+    #     except Exception as e:
+    #         print("Error during video creation:", e)
+    #         dict_response = {"error": True, "message": "Error During Creating Video"}
+    #
+    #     return Response(dict_response,
+    #                     status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+    def create(self, request):
+        try:
+            # Set the default value for status if not provided in the payload
+            request.data.setdefault('status', 0)
+            request.data.setdefault('remember_token', '')
+            request.data.setdefault('reset_code', '')
+
+            serializer = AdusumsSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Adusum Registered Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during adusum creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Adusum"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = News.objects.all()
+        adusums = get_object_or_404(queryset, pk=pk)
+        serializer = AdusumsSerializer(adusums, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+                            status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            queryset = Adusums.objects.all()
+            adusums = get_object_or_404(queryset, pk=pk)
+            serializer = AdusumsSerializer(adusums, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Adusum updated/verified Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Adusums.objects.all()
+        adusums = get_object_or_404(queryset, pk=pk)
+        adusums.delete()
+        return Response({"error": False, "message": "Adusum Deleted"})
+
+
 class NewsViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [AllowAny]

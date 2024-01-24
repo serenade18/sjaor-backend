@@ -10,6 +10,7 @@ from sjaorApp import views
 from sjaorApp.views import SuperUserRegistrationView, DocumentOnlyViewSet, EventOnlyViewSet
 
 router = routers.DefaultRouter()
+router.register("adusums", views.AdusumViewSet, basename="adusums")
 router.register("news", views.NewsViewSet, basename="news")
 router.register("catalogues", views.CataloguesViewSet, basename="catalogues")
 router.register("popes-prayers", views.PopesPrayerIntentionsViewSet, basename="popes-prayers")
