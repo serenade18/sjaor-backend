@@ -6,13 +6,14 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from datetime import datetime
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory, Shukran, IgnatianThoughts, EventCategory
+    DocumentCategory, Shukran, IgnatianThoughts, EventCategory, Events
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
     AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
-    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer
+    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer, EventsSerializer
 
 from django.contrib.auth import get_user_model
 
@@ -596,6 +597,86 @@ class EventOnlyViewSet(generics.ListAPIView):
 
     def get_queryset(self):
         return EventCategory.objects.all()
+
+
+class EventViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        news = Events.objects.all().order_by('-id')
+        serializer = EventsSerializer(news, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Events", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            # Extract event_month from the payload
+            event_month = request.data.get('event_month')
+
+            # Validate event_month
+            if not event_month:
+                dict_response = {"error": True, "message": "Missing event_month in the payload"}
+                return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
+
+            # Convert month name to number
+            try:
+                event_month_number = datetime.strptime(event_month, "%B").month
+            except ValueError:
+                dict_response = {"error": True, "message": "Invalid month name in the payload"}
+                return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
+
+            # Add the calculated month number to the payload data
+            request.data['event_month_number'] = event_month_number
+
+            serializer = EventsSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Event Created Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during event creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Event"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = Events.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        serializer = EventsSerializer(news, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        try:
+            queryset = Events.objects.all()
+            news = get_object_or_404(queryset, pk=pk)
+            serializer = EventsSerializer(news, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Event updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Events.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        news.delete()
+        return Response({"error": False, "message": "Event Deleted"})
 
 
 class DashboardApi(viewsets.ViewSet):

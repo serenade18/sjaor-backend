@@ -17,6 +17,7 @@ router.register("ignatian-thoughts", views.IgnatianThoughtsViewSet, basename="ig
 router.register("documents", views.DocumentViewSet, basename="documents")
 router.register("shukran", views.ShukranViewSet, basename="shukran")
 router.register("documents-category", views.DocumentCategoryViewSet, basename="documents-category")
+router.register("events", views.EventViewSet, basename="events")
 router.register("event-category", views.EventCategoryViewSet, basename="event-category")
 router.register("dashboard", views.DashboardApi, basename="dashboard")
 

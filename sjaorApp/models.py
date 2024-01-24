@@ -118,10 +118,13 @@ class Events(models.Model):
     event_category = models.ForeignKey(EventCategory, on_delete=models.CASCADE,default=None)
     event_day = models.CharField(max_length=255)
     event_month = models.CharField(max_length=255)
+    event_year = models.CharField(max_length=255)
     event_month_number = models.CharField(max_length=255)
     event_location = models.CharField(max_length=255)
     event_description = models.CharField(max_length=255)
     event_image = models.ImageField(upload_to='events/', null=True, blank=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
 
 
 class Shukran(models.Model):
