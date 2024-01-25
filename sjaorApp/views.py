@@ -7,13 +7,14 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from datetime import datetime
+from django.core.mail import send_mail
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory, Shukran, IgnatianThoughts, EventCategory, Events
+    DocumentCategory, Shukran, IgnatianThoughts, EventCategory, Events, Archivum
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
     AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
-    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer, EventsSerializer
+    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer, EventsSerializer, ArchivumSerializer
 
 from django.contrib.auth import get_user_model
 
@@ -110,20 +111,6 @@ class AdusumViewSet(viewsets.ViewSet):
 
         return Response(response_dict)
 
-    # def create(self, request):
-    #     try:
-    #         serializer = AdusumsSerializer(data=request.data, context={"request": request})
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             dict_response = {"error": False, "message": "Adusum Registered Successfully"}
-    #         else:
-    #             dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
-    #     except Exception as e:
-    #         print("Error during video creation:", e)
-    #         dict_response = {"error": True, "message": "Error During Creating Video"}
-    #
-    #     return Response(dict_response,
-    #                     status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
     def create(self, request):
         try:
             # Set the default value for status if not provided in the payload
@@ -153,14 +140,27 @@ class AdusumViewSet(viewsets.ViewSet):
 
     def update(self, request, pk=None):
         if not request.user.is_staff:
-            return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+            return Response({"error": True, "message": "User does not have enough permission to perform this task"},
                             status=status.HTTP_401_UNAUTHORIZED)
+
         try:
             queryset = Adusums.objects.all()
             adusums = get_object_or_404(queryset, pk=pk)
+
+            # Check if the status needs to be updated
+            new_status = request.data.get('status', None)
+            if new_status is not None and adusums.status != new_status:
+                adusums.status = new_status
+                adusums.save()
+
+                # Send verification email
+                self.send_verification_email(adusums.email_address)  # Replace 'email' with the actual field name in your model
+
+            # Continue with the regular update
             serializer = AdusumsSerializer(adusums, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
             dict_response = {"error": False, "message": "Adusum updated/verified Successfully"}
 
         except ValidationError as e:
@@ -169,7 +169,18 @@ class AdusumViewSet(viewsets.ViewSet):
             dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
 
         return Response(dict_response,
-                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+                        status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def send_verification_email(self, recipient_email):
+        # Customize the email subject and body as per your requirements
+        subject = "Adusum Verification"
+        message = "Congratulations! Your Adusum Account has been successfully verified."
+
+        # Replace 'from_email' with the actual sender email address
+        from_email = "your@example.com"
+
+        # Use Django's send_mail function to send the email
+        send_mail(subject, message, from_email, [recipient_email])
 
     def destroy(self, request, pk=None):
         if not request.user.is_staff:
@@ -181,6 +192,18 @@ class AdusumViewSet(viewsets.ViewSet):
         adusums.delete()
         return Response({"error": False, "message": "Adusum Deleted"})
 
+
+class UnAdusumViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        adusums = Adusums.objects.filter(status=0).order_by('-id')
+        serializer = AdusumsSerializer(adusums, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Adusum", "data": serializer.data}
+
+        return Response(response_dict)
 
 class NewsViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
@@ -239,6 +262,68 @@ class NewsViewSet(viewsets.ViewSet):
         #                     status=status.HTTP_401_UNAUTHORIZED)
 
         queryset = News.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        news.delete()
+        return Response({"error": False, "message": "News Deleted"})
+
+
+class ArchivumViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        news = Archivum.objects.all().order_by('-id')
+        serializer = ArchivumSerializer(news, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All News", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            serializer = ArchivumSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "News Posted Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during video creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Video"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = Archivum.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        serializer = ArchivumSerializer(news, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        try:
+            queryset = Archivum.objects.all()
+            news = get_object_or_404(queryset, pk=pk)
+            serializer = ArchivumSerializer(news, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "News updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Archivum.objects.all()
         news = get_object_or_404(queryset, pk=pk)
         news.delete()
         return Response({"error": False, "message": "News Deleted"})
@@ -797,11 +882,11 @@ class DashboardApi(viewsets.ViewSet):
         news = News.objects.all()
         news_serializer = NewsSerializer(news, many=True, context={"request": request})
 
-        adusums = Adusums.objects.all()
+        adusums = Adusums.objects.filter(status=1)
         adusums_serializer = AdusumsSerializer(adusums, many=True, context={"request": request})
 
-        products = Products.objects.all()
-        products_serializer = ProductsSerializer(products, many=True, context={"request": request})
+        products = EventCategory.objects.all()
+        products_serializer = EventCategorySerializer(products, many=True, context={"request": request})
 
         dict_response = {
             "error": False,

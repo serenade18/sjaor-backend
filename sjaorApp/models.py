@@ -160,3 +160,13 @@ class Products(models.Model):
     product_description = models.CharField(max_length=255)
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
+
+
+class Archivum(models.Model):
+    id = models.AutoField(primary_key=True)
+    avm_title = models.CharField(max_length=255)
+    avm_body = models.TextField()
+    avm_picture = models.ImageField(upload_to='archivum/', blank=True, null=True)
+    avm_video = models.CharField(max_length=255, blank=True, null=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()
