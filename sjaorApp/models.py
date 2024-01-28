@@ -156,6 +156,7 @@ class Adusums(models.Model):
 
 class Products(models.Model):
     id = models.AutoField(primary_key=True)
+    product_title = models.CharField(max_length=255)
     product_image = models.ImageField(upload_to='products/', null=True, blank=True)
     product_description = models.CharField(max_length=255)
     added_on = models.DateTimeField(auto_now_add=True)
@@ -167,6 +168,6 @@ class Archivum(models.Model):
     avm_title = models.CharField(max_length=255)
     avm_body = models.TextField()
     avm_picture = models.ImageField(upload_to='archivum/', blank=True, null=True)
-    avm_video = models.CharField(max_length=255, blank=True, null=True)
+    avm_video = models.CharField(max_length=12255, blank=True, null=True)
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()

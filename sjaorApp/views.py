@@ -205,6 +205,7 @@ class UnAdusumViewSet(viewsets.ViewSet):
 
         return Response(response_dict)
 
+
 class NewsViewSet(viewsets.ViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [AllowAny]
@@ -275,7 +276,7 @@ class ArchivumViewSet(viewsets.ViewSet):
         news = Archivum.objects.all().order_by('-id')
         serializer = ArchivumSerializer(news, many=True, context={"request": request})
 
-        response_dict = {"error": False, "message": "All News", "data": serializer.data}
+        response_dict = {"error": False, "message": "All Archivum", "data": serializer.data}
 
         return Response(response_dict)
 
@@ -284,7 +285,7 @@ class ArchivumViewSet(viewsets.ViewSet):
             serializer = ArchivumSerializer(data=request.data, context={"request": request})
             if serializer.is_valid():
                 serializer.save()
-                dict_response = {"error": False, "message": "News Posted Successfully"}
+                dict_response = {"error": False, "message": "Archivum Posted Successfully"}
             else:
                 dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
         except Exception as e:
@@ -308,7 +309,7 @@ class ArchivumViewSet(viewsets.ViewSet):
             serializer = ArchivumSerializer(news, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            dict_response = {"error": False, "message": "News updated Successfully"}
+            dict_response = {"error": False, "message": "Archivum updated Successfully"}
 
         except ValidationError as e:
             dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
@@ -326,7 +327,7 @@ class ArchivumViewSet(viewsets.ViewSet):
         queryset = Archivum.objects.all()
         news = get_object_or_404(queryset, pk=pk)
         news.delete()
-        return Response({"error": False, "message": "News Deleted"})
+        return Response({"error": False, "message": "Archivum Deleted"})
 
 
 class PopesPrayerIntentionsViewSet(viewsets.ViewSet):
@@ -869,6 +870,68 @@ class EventViewSet(viewsets.ViewSet):
         # For events not belonging to the "General Events" category, proceed with normal deletion
         event.delete()
         return Response({"error": False, "message": "Event Deleted"})
+
+
+class ProductsViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [AllowAny]
+
+    def list(self, request):
+        news = Products.objects.all().order_by('-id')
+        serializer = ProductsSerializer(news, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Products", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            serializer = ProductsSerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Product Added Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during video creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Video"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        queryset = Products.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        serializer = ProductsSerializer(news, context={"request": request})
+
+        return Response({"error": False, "message": "Single Data Fetch", "data": serializer.data})
+
+    def update(self, request, pk=None):
+        try:
+            queryset = Products.objects.all()
+            news = get_object_or_404(queryset, pk=pk)
+            serializer = ProductsSerializer(news, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Product updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Products.objects.all()
+        news = get_object_or_404(queryset, pk=pk)
+        news.delete()
+        return Response({"error": False, "message": "Product Deleted"})
 
 
 class DashboardApi(viewsets.ViewSet):
