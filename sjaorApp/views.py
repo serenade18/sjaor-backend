@@ -1,3 +1,4 @@
+import requests
 from django.shortcuts import render, get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import generics, status, viewsets
@@ -154,10 +155,14 @@ class AdusumViewSet(viewsets.ViewSet):
                 adusums.save()
 
                 # Send verification email
-                self.send_verification_email(adusums.email_address)  # Replace 'email' with the actual field name in your model
+                self.send_verification_email(adusums.email_address, adusums.fullname)
 
-            # Continue with the regular update
-            serializer = AdusumsSerializer(adusums, data=request.data, context={"request": request})
+            # Create a copy of the request data excluding the 'profile_picture' field
+            request_data_without_profile_picture = request.data.copy()
+            request_data_without_profile_picture.pop('profile_picture', None)
+
+            # Continue with the regular update using the modified data
+            serializer = AdusumsSerializer(adusums, data=request_data_without_profile_picture, context={"request": request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -171,16 +176,29 @@ class AdusumViewSet(viewsets.ViewSet):
         return Response(dict_response,
                         status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
 
-    def send_verification_email(self, recipient_email):
-        # Customize the email subject and body as per your requirements
-        subject = "Adusum Verification"
-        message = "Congratulations! Your Adusum Account has been successfully verified."
+    def send_verification_email(self, recipient_email, recipient_name):
 
-        # Replace 'from_email' with the actual sender email address
-        from_email = "your@example.com"
+        # Data to be sent in the POST request
+        data = {
+            'email': recipient_email,
+            'name': recipient_name
+        }
 
-        # Use Django's send_mail function to send the email
-        send_mail(subject, message, from_email, [recipient_email])
+        # Endpoint to send the verification email
+        endpoint_url = 'https://sjaorreadserver.sjaor.org/sendverificationemail'
+
+        try:
+            # Send POST request to the endpoint
+            response = requests.post(endpoint_url, json=data)
+
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                print("Verification email sent successfully")
+            else:
+                print("Failed to send verification email. Status code:", response.status_code)
+
+        except Exception as e:
+            print("An error occurred while sending the verification email:", e)
 
     def destroy(self, request, pk=None):
         if not request.user.is_staff:
@@ -204,6 +222,67 @@ class UnAdusumViewSet(viewsets.ViewSet):
         response_dict = {"error": False, "message": "All Adusum", "data": serializer.data}
 
         return Response(response_dict)
+
+    def update(self, request, pk=None):
+        if not request.user.is_staff:
+            return Response({"error": True, "message": "User does not have enough permission to perform this task"},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            queryset = Adusums.objects.all()
+            adusums = get_object_or_404(queryset, pk=pk)
+
+            # Check if the status needs to be updated
+            new_status = request.data.get('status', None)
+            if new_status is not None and adusums.status != new_status:
+                adusums.status = new_status
+                adusums.save()
+
+                # Send verification email
+                self.send_verification_email(adusums.email_address, adusums.fullname)
+
+            # Create a copy of the request data excluding the 'profile_picture' field
+            request_data_without_profile_picture = request.data.copy()
+            request_data_without_profile_picture.pop('profile_picture', None)
+
+            # Continue with the regular update using the modified data
+            serializer = AdusumsSerializer(adusums, data=request_data_without_profile_picture, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            dict_response = {"error": False, "message": "Adusum updated/verified Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                        status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def send_verification_email(self, recipient_email, recipient_name):
+
+        # Data to be sent in the POST request
+        data = {
+            'email': recipient_email,
+            'name': recipient_name
+        }
+
+        # Endpoint to send the verification email
+        endpoint_url = 'https://sjaorreadserver.sjaor.org/sendverificationemail'
+
+        try:
+            # Send POST request to the endpoint
+            response = requests.post(endpoint_url, json=data)
+
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                print("Verification email sent successfully")
+            else:
+                print("Failed to send verification email. Status code:", response.status_code)
+
+        except Exception as e:
+            print("An error occurred while sending the verification email:", e)
 
 
 class NewsViewSet(viewsets.ViewSet):
@@ -344,6 +423,17 @@ class PopesPrayerIntentionsViewSet(viewsets.ViewSet):
 
     def create(self, request):
         try:
+            # Get the total number of catalogues
+            total_prayers = PopesPrayerIntentions.objects.count()
+
+            # Check if the limit is reached (e.g., 5)
+            if total_prayers >= 1:
+                # Retrieve the oldest catalogue
+                oldest_prayers = PopesPrayerIntentions.objects.order_by('added_on').first()
+
+                # Delete the oldest catalogue
+                oldest_prayers.delete()
+
             serializer = PopesPrayerIntentionsSerializer(data=request.data, context={"request": request})
             if serializer.is_valid():
                 serializer.save()
