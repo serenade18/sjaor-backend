@@ -12,10 +12,11 @@ from django.core.mail import send_mail
 
 from sjaorApp import serializers
 from sjaorApp.models import UserAccount, News, PopesPrayerIntentions, Adusums, Products, Catalogues, Documents, \
-    DocumentCategory, Shukran, IgnatianThoughts, EventCategory, Events, Archivum
+    DocumentCategory, Shukran, IgnatianThoughts, EventCategory, Events, Archivum, Necrology
 from sjaorApp.serializers import UserAccountSerializer, NewsSerializer, PopesPrayerIntentionsSerializer, \
     AdusumsSerializer, ProductsSerializer, CataloguesSerializer, DocumentSerializer, DocumentCategorySerializer, \
-    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer, EventsSerializer, ArchivumSerializer
+    ShukranSerializer, IgnatianThoughtsSerializer, EventCategorySerializer, EventsSerializer, ArchivumSerializer, \
+    NecrologySerializer
 
 from django.contrib.auth import get_user_model
 
@@ -590,6 +591,79 @@ class DocumentViewSet(viewsets.ViewSet):
         queryset = Documents.objects.all()
         news = get_object_or_404(queryset, pk=pk)
         news.delete()
+        return Response({"error": False, "message": "Document Deleted"})
+
+
+class NecrologyViewSet(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        necrology = Necrology.objects.all().order_by('-id')
+        serializer = NecrologySerializer(necrology, many=True, context={"request": request})
+
+        response_dict = {"error": False, "message": "All Necrologies", "data": serializer.data}
+
+        return Response(response_dict)
+
+    def create(self, request):
+        try:
+            # Extract necrology_month from the payload
+            month = request.data.get('month')
+
+            # Validate event_month
+            if not month:
+                dict_response = {"error": True, "message": "Missing necrology_month in the payload"}
+                return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
+
+            # Convert month name to number
+            try:
+                month = datetime.strptime(month, "%B").month
+            except ValueError:
+                dict_response = {"error": True, "message": "Invalid month name in the payload"}
+                return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
+
+            # Add the calculated month number to the payload data
+            request.data['month'] = month
+
+            serializer = NecrologySerializer(data=request.data, context={"request": request})
+            if serializer.is_valid():
+                serializer.save()
+                dict_response = {"error": False, "message": "Necrology Added Successfully"}
+            else:
+                dict_response = {"error": True, "message": "Validation Error", "errors": serializer.errors}
+        except Exception as e:
+            print("Error during catalogue creation:", e)
+            dict_response = {"error": True, "message": "Error During Creating Necrology"}
+
+        return Response(dict_response,
+                        status=status.HTTP_201_CREATED if not dict_response["error"] else status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, pk=None):
+        try:
+            queryset = Necrology.objects.all()
+            necrology = get_object_or_404(queryset, pk=pk)
+            serializer = NecrologySerializer(necrology, data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            dict_response = {"error": False, "message": "Necrology Updated Successfully"}
+
+        except ValidationError as e:
+            dict_response = {"error": True, "message": "Validation Error", "details": str(e)}
+        except Exception as e:
+            dict_response = {"error": True, "message": "An Error Occurred", "details": str(e)}
+
+        return Response(dict_response,
+                            status=status.HTTP_400_BAD_REQUEST if dict_response['error'] else status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        # if not request.user.is_staff:
+        #     return Response({"error": True, "message": "User does not have enough permission to perform this task"},\
+        #                     status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = Necrology.objects.all()
+        necrology = get_object_or_404(queryset, pk=pk)
+        necrology.delete()
         return Response({"error": False, "message": "Document Deleted"})
 
 

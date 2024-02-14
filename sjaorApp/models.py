@@ -171,3 +171,13 @@ class Archivum(models.Model):
     avm_video = models.CharField(max_length=12255, blank=True, null=True)
     added_on = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
+
+
+class Necrology(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+    month = models.CharField(max_length=255)
+    year = models.CharField(max_length=255)
+    file = models.FileField(upload_to='necrologies/', blank=True, null=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+    objects = models.Manager()

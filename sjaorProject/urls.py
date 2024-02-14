@@ -1,5 +1,3 @@
-"""
-"""
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
@@ -19,6 +17,7 @@ router.register("catalogues", views.CataloguesViewSet, basename="catalogues")
 router.register("popes-prayers", views.PopesPrayerIntentionsViewSet, basename="popes-prayers")
 router.register("ignatian-thoughts", views.IgnatianThoughtsViewSet, basename="ignatian-thoughts")
 router.register("documents", views.DocumentViewSet, basename="documents")
+router.register("necrology", views.NecrologyViewSet, basename="necrology")
 router.register("shukran", views.ShukranViewSet, basename="shukran")
 router.register("documents-category", views.DocumentCategoryViewSet, basename="documents-category")
 router.register("events", views.EventViewSet, basename="events")
